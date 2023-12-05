@@ -354,7 +354,7 @@ const ChatWebsocketHandler = struct {
             std.log.debug("Websocket closed!", .{});
         }
 
-        for (chat_handlers.items) |handler, i| {
+        for (chat_handlers.items, 0..) |handler, i| {
             if (handler == self) {
                 _ = chat_handlers.swapRemove(i);
                 break;

@@ -262,10 +262,10 @@ pub const IOStream = struct {
         while (self.amountBuffered() < n) {
             try self.fillBuffer();
         }
-        const d = @bitCast(I, self.readBuffered()[0..n].*);
+        const d = @as(I, @bitCast(self.readBuffered()[0..n].*));
         const r = if (endian != native_endian) @byteSwap(I, d) else d;
         self.skipBytes(n);
-        return @bitCast(T, r);
+        return @as(T, @bitCast(r));
     }
 
     pub fn readFn(self: *Self, dest: []u8) !usize {

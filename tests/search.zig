@@ -34,12 +34,12 @@ pub fn main() anyerror!void {
     std.testing.expectEqual(ptrs1, ptrs2);
 
     timer.reset();
-    for (ptrs1) |src, i| {
+    for (ptrs1, 0..) |src, i| {
         const dst = ptrs2[i];
         std.testing.expect(std.mem.eql(u8, src, dst));
     }
     const t3 = timer.lap();
-    for (ptrs1) |src, i| {
+    for (ptrs1, 0..) |src, i| {
         const dst = ptrs2[i];
         std.testing.expect(eql(u8, src, dst));
     }
@@ -47,27 +47,27 @@ pub fn main() anyerror!void {
 
     var dest: [4096]u8 = undefined;
     timer.reset();
-    for (ptrs1) |src, i| {
+    for (ptrs1, 0..) |src, i| {
         std.mem.copy(u8, &dest, src);
     }
     const t5 = timer.lap();
 
-    for (ptrs1) |src, i| {
+    for (ptrs1, 0..) |src, i| {
         copy(u8, &dest, src);
     }
     const t6 = timer.lap();
 
     std.log.warn("split std: {}ns", .{t1});
     std.log.warn("split SIMD: {}ns", .{t2});
-    std.log.warn("split diff: {}", .{@intToFloat(f32, t1) / @intToFloat(f32, t2)});
+    std.log.warn("split diff: {}", .{@as(f32, @floatFromInt(t1)) / @as(f32, @floatFromInt(t2))});
 
     std.log.warn("eql std: {}ns", .{t3});
     std.log.warn("eql SIMD: {}ns", .{t4});
-    std.log.warn("eql diff: {}", .{@intToFloat(f32, t3) / @intToFloat(f32, t4)});
+    std.log.warn("eql diff: {}", .{@as(f32, @floatFromInt(t3)) / @as(f32, @floatFromInt(t4))});
 
     std.log.warn("copy std: {}ns", .{t5});
     std.log.warn("copy SIMD: {}ns", .{t6});
-    std.log.warn("copy diff: {}", .{@intToFloat(f32, t5) / @intToFloat(f32, t6)});
+    std.log.warn("copy diff: {}", .{@as(f32, @floatFromInt(t5)) / @as(f32, @floatFromInt(t6))});
 }
 
 pub inline fn copy(comptime T: type, dest: []T, source: []const T) void {
@@ -91,7 +91,7 @@ pub inline fn eql(comptime T: type, a: []const T, b: []const T) bool {
     if (a.ptr == b.ptr) return true;
     if (a.len < n) {
         // Too small to fit, fallback to standard eql
-        for (a) |item, index| {
+        for (a, 0..) |item, index| {
             if (b[index] != item) return false;
         }
     } else {
@@ -135,9 +135,9 @@ pub fn indexOfAnyPos(comptime T: type, buf: []const T, start_index: usize, delim
         // Look for the first character in the delimter
         const first_chunk: V8x32 = buf[start..end][0..n].*;
         const last_chunk: V8x32 = buf[last_start..last_end][0..n].*;
-        const mask = @bitCast(V1x32, first == first_chunk) & @bitCast(V1x32, last == last_chunk);
+        const mask = @as(V1x32, @bitCast(first == first_chunk)) & @as(V1x32, @bitCast(last == last_chunk));
         if (@reduce(.Or, mask) != 0) {
-            for (@as([n]bool, @bitCast(Vbx32, mask))) |match, i| {
+            for (@as([n]bool, @as(Vbx32, @bitCast(mask))), 0..) |match, i| {
                 if (match and eql(T, buf[start + i .. start + i + k], delimiter)) {
                     return start + i;
                 }

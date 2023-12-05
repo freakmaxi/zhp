@@ -28,7 +28,7 @@ pub const Opcode = enum(u4) {
     ResF = 0xF,
 
     pub fn isControl(opcode: Opcode) bool {
-        return @enumToInt(opcode) & 0x8 != 0;
+        return @intFromEnum(opcode) & 0x8 != 0;
     }
 };
 
@@ -43,7 +43,7 @@ pub const WebsocketHeader = packed struct {
 
     pub fn packLength(length: usize) u7 {
         return switch (length) {
-            0...126 => @truncate(u7, length),
+            0...126 => @as(u7, @truncate(length)),
             127...0xFFFF => 126,
             else => 127,
         };
@@ -119,7 +119,7 @@ pub const Websocket = struct {
     // Close and send the status
     pub fn close(self: Websocket, code: u16) !void {
         const c = if (native_endian == .Big) code else @byteSwap(u16, code);
-        const data = @bitCast([2]u8, c);
+        const data = @as([2]u8, @bitCast(c));
         _ = try self.writeMessage(.Close, &data);
     }
 
@@ -164,13 +164,13 @@ pub const Websocket = struct {
 
         if (!dataframe.isValid()) return error.InvalidMessage;
 
-        try stream.writeIntBig(u16, @bitCast(u16, dataframe.header));
+        try stream.writeIntBig(u16, @as(u16, @bitCast(dataframe.header)));
 
         // Write extended length if needed
         const n = dataframe.data.len;
         switch (n) {
             0...126 => {}, // Included in header
-            127...0xFFFF => try stream.writeIntBig(u16, @truncate(u16, n)),
+            127...0xFFFF => try stream.writeIntBig(u16, @as(u16, @truncate(n))),
             else => try stream.writeIntBig(u64, n),
         }
 
@@ -182,7 +182,7 @@ pub const Websocket = struct {
             try stream.writeAll(mask);
 
             // Encode
-            for (dataframe.data) |c, i| {
+            for (dataframe.data, 0..) |c, i| {
                 try stream.writeByte(c ^ mask[i % 4]);
             }
         } else {
@@ -271,7 +271,7 @@ pub const Websocket = struct {
         const data = buf[start..end];
         if (header.mask) {
             // Decode data in place
-            for (data) |c, i| {
+            for (data, 0..) |c, i| {
                 data[i] = c ^ mask[i % 4];
             }
         }

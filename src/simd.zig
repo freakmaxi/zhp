@@ -26,7 +26,7 @@ pub fn eql(comptime T: type, a: []const T, b: []const T) bool {
     if (a.ptr == b.ptr) return true;
     if (a.len < n) {
         // Too small to fit, fallback to standard eql
-        for (a) |item, index| {
+        for (a, 0..) |item, index| {
             if (b[index] != item) return false;
         }
     } else {
@@ -66,7 +66,7 @@ pub fn lastIndexOf(comptime T: type, buf: []const u8, delimiter: []const u8) ?us
         // Look for the first character in the delimter
         const first_chunk: V8x32 = buf[start..end][0..n].*;
         const last_chunk: V8x32 = buf[last_start..last_end][0..n].*;
-        const mask = @bitCast(V1x32, first == first_chunk) & @bitCast(V1x32, last == last_chunk);
+        const mask = @as(V1x32, @bitCast(first == first_chunk)) & @as(V1x32, @bitCast(last == last_chunk));
         if (@reduce(.Or, mask) != 0) {
             // TODO: Use __builtin_ctz???
             var i: usize = n;
@@ -105,10 +105,10 @@ pub fn indexOfPos(comptime T: type, buf: []const u8, start_index: usize, delimit
         // Look for the first character in the delimter
         const first_chunk: V8x32 = buf[start..end][0..n].*;
         const last_chunk: V8x32 = buf[last_start..last_end][0..n].*;
-        const mask = @bitCast(V1x32, first == first_chunk) & @bitCast(V1x32, last == last_chunk);
+        const mask = @as(V1x32, @bitCast(first == first_chunk)) & @as(V1x32, @bitCast(last == last_chunk));
         if (@reduce(.Or, mask) != 0) {
             // TODO: Use __builtin_clz???
-            for (@as([n]bool, @bitCast(Vbx32, mask))) |match, i| {
+            for (@as([n]bool, @as(Vbx32, @bitCast(mask))), 0..) |match, i| {
                 if (match and eql(T, buf[start + i .. start + i + k], delimiter)) {
                     return start + i;
                 }

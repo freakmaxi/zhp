@@ -54,7 +54,7 @@ pub fn createHandler(comptime T: type) Handler {
                     }
 
                     if (@bitSizeOf(T) > 0) {
-                        server_request.handler = @ptrToInt(self);
+                        server_request.handler = @intFromPtr(self);
                     } else if (@hasDecl(T, "stream")) {
                         // We need to be able to store the pointer
                         @compileError("Stream handlers must contain context");
@@ -66,7 +66,7 @@ pub fn createHandler(comptime T: type) Handler {
                         inline for (std.meta.fields(Request.Method)) |f| {
                             const name = comptime [_]u8{std.ascii.toLower(f.name[0])} ++ f.name[1..];
                             if (@hasDecl(T, name)) {
-                                if (request.method == @intToEnum(Request.Method, f.value)) {
+                                if (request.method == @as(Request.Method, @enumFromInt(f.value))) {
                                     const handler = @field(self, name);
                                     return try handler(request, response);
                                 }
@@ -79,7 +79,7 @@ pub fn createHandler(comptime T: type) Handler {
                 .Finish => {
                     if (@hasDecl(T, "stream")) {
                         if (server_request.handler) |addr| {
-                            const self = @intToPtr(*T, addr);
+                            const self = @as(*T, @ptrFromInt(addr));
                             _ = try self.stream(server_request.stream.?);
                             return;
                         }
